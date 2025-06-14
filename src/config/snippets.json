@@ -1,0 +1,18 @@
+{
+  "TCS Template": {
+    "prefix": "template",
+    "body": [
+      "// Name: ${1:测试用例名称}",
+      "// Author: ${2:作者}",
+      "// Date: $CURRENT_YEAR-$CURRENT_MONTH-$CURRENT_DATE $CURRENT_HOUR:$CURRENT_MINUTE:$CURRENT_SECOND",
+      "",
+      "// ${3:测试步骤}",
+      "// 初始化",
+      "write M0100, 1  // 复位开",
+      "write M0100, 0  // 复位关",
+      "",
+      "$0"
+    ],
+    "description": "创建一个基本的TCS测试文件"
+  }
+}

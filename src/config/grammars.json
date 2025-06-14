@@ -1,0 +1,71 @@
+{
+  "name": "tcs",
+  "scopeName": "source.tcs",
+  "patterns": [
+    {
+      "include": "#keywords"
+    },
+    {
+      "include": "#strings"
+    },
+    {
+      "include": "#numbers"
+    },
+    {
+      "include": "#comments"
+    },
+    {
+      "include": "#variables"
+    }
+  ],
+  "repository": {
+    "keywords": {
+      "patterns": [
+        {
+          "name": "keyword.control.tcs",
+          "match": "(?<!\\w)(write|check|delay|linear_input|check_alarm|check_range|reg_assign|reg_check|watch|unwatch)(?!\\w)"
+        }
+      ]
+    },
+    "strings": {
+      "name": "string.quoted.tcs",
+      "patterns": [
+        {
+          "name": "string.quoted.double.tcs",
+          "begin": "\"",
+          "end": "\"",
+          "patterns": [
+            {
+              "name": "constant.character.escape.tcs",
+              "match": "\\\\."
+            }
+          ]
+        },
+        {
+          "name": "string.quoted.single.tcs",
+          "begin": "'",
+          "end": "'",
+          "patterns": [
+            {
+              "name": "constant.character.escape.tcs",
+              "match": "\\\\."
+            }
+          ]
+        }
+      ]
+    },
+    "numbers": {
+      "name": "constant.numeric.tcs",
+      "match": "\\b\\d+(\\.\\d+)?\\b"
+    },
+    "comments": {
+      "name": "comment.line.double-slash.tcs",
+      "begin": "//",
+      "end": "$"
+    },
+    "variables": {
+      "name": "variable.other.tcs",
+      "match": "\\b\\w+\\b"
+    }
+  }
+}
