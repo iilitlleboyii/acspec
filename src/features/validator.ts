@@ -50,32 +50,10 @@ export default class Validator {
     }
 
     // 更新诊断信息
-    this.diagnosticCollection.set(document.uri, errors.map(error => new vscode.Diagnostic(
-      error.range,
-      error.message,
-      error.severity
-    )));
-  }
-
-  /**
-   * 格式化文档
-   */
-  public format(document: vscode.TextDocument): vscode.TextEdit[] {
-    const edits: vscode.TextEdit[] = [];
-
-    for (let i = 0; i < document.lineCount; i++) {
-      const line = document.lineAt(i);
-      const lineText = line.text.trim();
-
-      if (!lineText || lineText.startsWith('//')) continue;
-
-      const formattedLine = this.formatLine(lineText);
-      if (formattedLine !== lineText) {
-        edits.push(vscode.TextEdit.replace(line.range, formattedLine));
-      }
-    }
-
-    return edits;
+    this.diagnosticCollection.set(
+      document.uri,
+      errors.map((error) => new vscode.Diagnostic(error.range, error.message, error.severity))
+    );
   }
 
   /**
@@ -87,12 +65,9 @@ export default class Validator {
     const command = parts[0];
 
     // 校验关键字
-    if (!this.keywords[command.toLowerCase()]) {
+    if (!Object.hasOwn(this.keywords, command.toLowerCase())) {
       errors.push({
-        range: new vscode.Range(
-          new vscode.Position(lineNumber, 0),
-          new vscode.Position(lineNumber, command.length)
-        ),
+        range: new vscode.Range(new vscode.Position(lineNumber, 0), new vscode.Position(lineNumber, command.length)),
         message: '无效的命令',
         severity: vscode.DiagnosticSeverity.Error
       });
@@ -102,11 +77,8 @@ export default class Validator {
     // 校验关键字大小写
     if (command !== command.toLowerCase()) {
       errors.push({
-        range: new vscode.Range(
-          new vscode.Position(lineNumber, 0),
-          new vscode.Position(lineNumber, command.length)
-        ),
-        message: '命令必须使用小写',
+        range: new vscode.Range(new vscode.Position(lineNumber, 0), new vscode.Position(lineNumber, command.length)),
+        message: '关键字必须使用小写',
         severity: vscode.DiagnosticSeverity.Error
       });
     }
@@ -118,10 +90,7 @@ export default class Validator {
     // 校验参数数量
     if (params.length < keyword.params.length) {
       errors.push({
-        range: new vscode.Range(
-          new vscode.Position(lineNumber, 0),
-          new vscode.Position(lineNumber, lineText.length)
-        ),
+        range: new vscode.Range(new vscode.Position(lineNumber, 0), new vscode.Position(lineNumber, lineText.length)),
         message: `缺少参数，需要 ${keyword.params.length} 个参数`,
         severity: vscode.DiagnosticSeverity.Error
       });
@@ -175,39 +144,13 @@ export default class Validator {
   }
 
   /**
-   * 格式化单行代码
-   */
-  private formatLine(lineText: string): string {
-    const parts = lineText.split(/\s+/);
-    const command = parts[0].toLowerCase();
-    
-    if (!this.keywords[command]) return lineText;
-
-    const params = this.parseParams(lineText.substring(parts[0].length).trim());
-    const keyword = this.keywords[command];
-
-    // 格式化参数
-    const formattedParams = params.map((param, index) => {
-      if (index >= keyword.params.length) return param;
-
-      const paramDef = keyword.params[index];
-      if (paramDef.type === 'address') {
-        return param.toUpperCase();
-      }
-      return param;
-    });
-
-    // 组合成格式化后的行
-    return `${command} ${formattedParams.join(', ')}`;
-  }
-
-  /**
    * 解析参数
    */
   private parseParams(paramsText: string): string[] {
-    return paramsText.split(',')
-      .map(p => p.trim())
-      .filter(p => p.length > 0);
+    return paramsText
+      .split(',')
+      .map((p) => p.trim())
+      .filter((p) => p.length > 0);
   }
 
   /**
