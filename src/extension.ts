@@ -54,9 +54,7 @@ export async function activate(context: vscode.ExtensionContext) {
       }
     }),
     vscode.workspace.onDidCloseTextDocument((document) => {
-      if (document.languageId === 'tcs') {
-        validator.clear();
-      }
+      // 不再需要在关闭文档时清除诊断信息
     })
   );
 
