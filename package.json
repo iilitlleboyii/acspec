@@ -35,7 +35,7 @@
       "properties": {
         "acspec.autoUpdate": {
           "type": "boolean",
-          "default": false,
+          "default": true,
           "description": "是否在插件激活时自动更新库文件"
         },
         "acspec.registerLibrary": {
