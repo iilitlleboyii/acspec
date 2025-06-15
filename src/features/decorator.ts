@@ -22,9 +22,11 @@ type KeywordMap = {
 
 export default class MyDecorator {
   private decorationType: vscode.TextEditorDecorationType;
+
   private registerManager: RegisterManager;
-  private alarmManager: AlarmManager;
   private registerLibrary: Record<string, any>;
+
+  private alarmManager: AlarmManager;
   private alarmLibrary: Record<string, any>;
 
   constructor(registerManager: RegisterManager, alarmManager: AlarmManager) {
@@ -35,29 +37,32 @@ export default class MyDecorator {
     });
 
     this.registerManager = registerManager;
-    this.alarmManager = alarmManager;
     this.registerLibrary = Object.fromEntries(
       Object.entries(this.registerManager.getRegisterLibrary()).map(([key, value]) => [value, key])
     );
+
+    this.alarmManager = alarmManager;
     this.alarmLibrary = Object.fromEntries(
       Object.entries(this.alarmManager.getAlarmLibrary()).map(([key, value]) => [value, key])
     );
   }
 
-  private parseCommandAndParams(lineText: string): { command: string, params: string[], paramPositions: number[] } | null {
+  private parseCommandAndParams(
+    lineText: string
+  ): { command: string; params: string[]; paramPositions: number[] } | null {
     const commandMatch = lineText.match(/^\s*(\w+)\s*(.*)/);
     if (!commandMatch) return null;
 
     const command = commandMatch[1];
     const paramsText = commandMatch[2];
-    
+
     const params: string[] = [];
     const paramPositions: number[] = [];
-    
+
     // 记录每个参数的起始位置
     let currentPos = lineText.indexOf(command) + command.length;
     const paramsList = paramsText.split(',');
-    
+
     for (const param of paramsList) {
       const trimmedParam = param.trim();
       if (trimmedParam) {
@@ -69,7 +74,7 @@ export default class MyDecorator {
         }
       }
     }
-    
+
     return { command, params, paramPositions };
   }
 
@@ -78,13 +83,13 @@ export default class MyDecorator {
       range,
       renderOptions: {
         after: {
-          contentText: `: ${description}`
+          contentText: `:${description}`
         }
       }
     };
   }
 
-  update(editor: vscode.TextEditor | void) {
+  update(editor: vscode.TextEditor | undefined) {
     if (!editor) return;
 
     const decorations: vscode.DecorationOptions[] = [];
@@ -94,7 +99,7 @@ export default class MyDecorator {
     for (let i = 0; i < document.lineCount; i++) {
       const lineText = document.lineAt(i).text;
       const parsed = this.parseCommandAndParams(lineText);
-      
+
       if (!parsed || !keywords[parsed.command]) continue;
 
       const { command, params, paramPositions } = parsed;
@@ -120,9 +125,8 @@ export default class MyDecorator {
           const paramStart = paramPositions[index];
           if (paramStart !== -1) {
             // 检查这个位置是否已经有装饰器
-            const existingDecoration = decorations.find(d => 
-              d.range.start.line === i && 
-              d.range.start.character === paramStart
+            const existingDecoration = decorations.find(
+              (d) => d.range.start.line === i && d.range.start.character === paramStart
             );
 
             if (!existingDecoration) {
