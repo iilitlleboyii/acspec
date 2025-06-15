@@ -6,8 +6,6 @@ import MyHoverProvider from './provider/hover';
 import RegisterManager from './modules/register';
 import AlarmManager from './modules/alarm';
 import MyDecorator from './features/decorator';
-import CodeValidator from './features/validator';
-import CodeFormatter from './features/formatter';
 
 // This method is called when your extension is activated
 // Your extension is activated the very first time the command is executed
@@ -24,18 +22,12 @@ export async function activate(context: vscode.ExtensionContext) {
 
   const registerManager = new RegisterManager(context);
   const alarmManager = new AlarmManager(context);
-  
+
   const autoUpdate = vscode.workspace.getConfiguration('acspec').get('autoUpdate');
   if (autoUpdate) {
-    await Promise.all([
-      registerManager.updateLibraries(),
-      alarmManager.updateLibraries()
-    ]);
+    await Promise.all([registerManager.updateLibraries(), alarmManager.updateLibraries()]);
   } else {
-    await Promise.all([
-      registerManager.loadRegisterLibrary(),
-      alarmManager.loadAlarmLibrary()
-    ]);
+    await Promise.all([registerManager.loadRegisterLibrary(), alarmManager.loadAlarmLibrary()]);
   }
 
   const decorator = new MyDecorator(registerManager, alarmManager);
@@ -87,85 +79,6 @@ export async function activate(context: vscode.ExtensionContext) {
 
   // 注册悬浮提示
   context.subscriptions.push(vscode.languages.registerHoverProvider('tcs', new MyHoverProvider()));
-
-  // 创建诊断集合
-  const diagnosticCollection = vscode.languages.createDiagnosticCollection('acspec');
-  context.subscriptions.push(diagnosticCollection);
-
-  const codeValidator = new CodeValidator();
-
-  // 验证当前文档
-  function validateTextDocument(document: vscode.TextDocument) {
-    if (document.languageId !== 'tcs') {
-      return;
-    }
-
-    const diagnostics: vscode.Diagnostic[] = [];
-
-    for (let i = 0; i < document.lineCount; i++) {
-      const line = document.lineAt(i);
-      if (!line.isEmptyOrWhitespace) {
-        const lineDiagnostics = codeValidator.validateLine(line.text);
-        lineDiagnostics.forEach((d) => {
-          // 调整诊断的行号
-          d.range = new vscode.Range(
-            new vscode.Position(i, d.range.start.character),
-            new vscode.Position(i, d.range.end.character)
-          );
-          diagnostics.push(d);
-        });
-      }
-    }
-
-    diagnosticCollection.set(document.uri, diagnostics);
-  }
-
-  // 注册文档更改事件
-  context.subscriptions.push(
-    vscode.workspace.onDidChangeTextDocument((event) => {
-      if (event.document.languageId === 'tcs') {
-        validateTextDocument(event.document);
-      }
-    })
-  );
-
-  // 注册文档打开事件
-  context.subscriptions.push(
-    vscode.workspace.onDidOpenTextDocument((document) => {
-      if (document.languageId === 'tcs') {
-        validateTextDocument(document);
-      }
-    })
-  );
-
-  // 验证所有已打开的文档
-  vscode.workspace.textDocuments.forEach((document) => {
-    if (document.languageId === 'tcs') {
-      validateTextDocument(document);
-    }
-  });
-
-  // 注册格式化命令
-  const formatter = new CodeFormatter();
-  context.subscriptions.push(
-    vscode.languages.registerDocumentFormattingEditProvider('tcs', {
-      provideDocumentFormattingEdits(document: vscode.TextDocument): vscode.TextEdit[] {
-        const edits: vscode.TextEdit[] = [];
-
-        for (let i = 0; i < document.lineCount; i++) {
-          const line = document.lineAt(i);
-          if (!line.isEmptyOrWhitespace) {
-            const formattedText = formatter.format(line.text);
-            if (formattedText !== line.text) {
-              edits.push(vscode.TextEdit.replace(line.range, formattedText));
-            }
-          }
-        }
-
-        return edits;
-      }
-    })
-  );
 }
 
 // This method is called when your extension is deactivated
