@@ -81,11 +81,9 @@ export default class Formatter implements vscode.DocumentFormattingEditProvider 
     if (!parseResult.tokens.length) return '';
 
     const commandToken = parseResult.tokens[0];
-    const paramTokens = parseResult.tokens.slice(1);
-
-    let formatted = commandToken.text.toLowerCase();
+    const paramTokens = parseResult.tokens.slice(1);    let formatted = commandToken.text.toLowerCase();
     if (paramTokens.length > 0) {
-      formatted += ' ' + paramTokens.map(token => token.text).join(',');
+      formatted += ' ' + paramTokens.map(token => token.text).join(', ');
     }
 
     return formatted;

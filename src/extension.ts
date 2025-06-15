@@ -62,13 +62,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
   // 注册格式化器
   context.subscriptions.push(
-    vscode.languages.registerDocumentFormattingEditProvider('tcs', formatter),
-    // 注册保存时自动格式化
-    vscode.workspace.onDidSaveTextDocument((document) => {
-      if (document.languageId === 'tcs') {
-        vscode.commands.executeCommand('editor.action.formatDocument');
-      }
-    })
+    vscode.languages.registerDocumentFormattingEditProvider('tcs', formatter)
   );
 
   const decorator = new MyDecorator(registerManager, alarmManager);
