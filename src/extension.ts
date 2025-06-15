@@ -6,6 +6,8 @@ import MyHoverProvider from './provider/hover';
 import RegisterManager from './modules/register';
 import AlarmManager from './modules/alarm';
 import MyDecorator from './features/decorator';
+import Validator from './features/validator';
+import Formatter from './features/formatter';
 
 // This method is called when your extension is activated
 // Your extension is activated the very first time the command is executed
@@ -79,6 +81,33 @@ export async function activate(context: vscode.ExtensionContext) {
 
   // 注册悬浮提示
   context.subscriptions.push(vscode.languages.registerHoverProvider('tcs', new MyHoverProvider()));
+
+  const validator = new Validator();
+  const formatter = new Formatter();
+
+  // 注册代码验证器
+  context.subscriptions.push(
+    vscode.workspace.onDidOpenTextDocument((document) => {
+      validator.validate(document);
+    }),
+    vscode.workspace.onDidChangeTextDocument((event) => {
+      validator.validate(event.document);
+    }),
+    vscode.workspace.onDidCloseTextDocument((document) => {
+      validator.clear();
+    })
+  );
+
+  // 注册格式化器
+  context.subscriptions.push(
+    vscode.languages.registerDocumentFormattingEditProvider('tcs', formatter),
+    // 注册保存时自动格式化
+    vscode.workspace.onDidSaveTextDocument((document) => {
+      if (document.languageId === 'tcs') {
+        vscode.commands.executeCommand('editor.action.formatDocument');
+      }
+    })
+  );
 }
 
 // This method is called when your extension is deactivated
