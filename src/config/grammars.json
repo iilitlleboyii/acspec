@@ -59,9 +59,25 @@
       "match": "\\b\\d+(\\.\\d+)?\\b"
     },
     "comments": {
-      "name": "comment.line.double-slash.tcs",
-      "begin": "//",
-      "end": "$"
+      "patterns": [
+        {
+          "name": "comment.line.double-slash.tcs",
+          "begin": "//",
+          "end": "$"
+        },
+        {
+          "name": "comment.block.tcs",
+          "begin": "/\\*",
+          "end": "\\*/",
+          "contentName": "emphasis",
+          "patterns": [
+            {
+              "name": "emphasis",
+              "match": ".+?"
+            }
+          ]
+        }
+      ]
     },
     "variables": {
       "name": "variable.other.tcs",
