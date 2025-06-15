@@ -83,12 +83,11 @@ export class Parser {
     }
 
     return commentStart >= 0 ? line.substring(0, commentStart).trim() : line.trim();
-  }
-  /**
+  }  /**
    * 解析参数列表
-   * 使用逗号分隔参数
+   * 使用逗号分隔参数（支持中英文逗号）
    */
   private static parseParams(paramsText: string): string[] {
-    return paramsText.split(',').map(p => p.trim());
+    return paramsText.split(/[,，]/).map(p => p.trim());
   }
 }
