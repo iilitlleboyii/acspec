@@ -2,13 +2,14 @@
   "name": "acspec",
   "displayName": "AcSpec",
   "description": "",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "engines": {
     "vscode": "^1.101.0"
   },
   "categories": [
     "Other"
   ],
+  "icon": "icon/shortcut.png",
   "activationEvents": [],
   "main": "./out/extension.js",
   "contributes": {

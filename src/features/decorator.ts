@@ -93,7 +93,15 @@ export default class MyDecorator {
 
         const param = keyword.params[index];
         const value = token.text;
-        let description = '';        // 根据参数类型和completer添加描述
+
+        // 跳过空参数
+        if (!value || !value.trim()) {
+          return;
+        }
+        
+        let description = '';
+
+        // 根据参数类型和completer添加描述
         switch (param.type.toLowerCase()) {
           case 'address':
             // 根据completer类型显示对应描述
@@ -112,9 +120,7 @@ export default class MyDecorator {
             }
             break;
           case 'time':
-            if (value) {
-              description = '秒';
-            }
+            description = '秒';
             break;
         }
 
