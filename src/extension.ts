@@ -32,6 +32,47 @@ export async function activate(context: vscode.ExtensionContext) {
     await Promise.all([registerManager.loadRegisterLibrary(), alarmManager.loadAlarmLibrary()]);
   }
 
+  const validator = new Validator();
+
+  // 首次激活时验证所有打开的tcs文件
+  vscode.workspace.textDocuments.forEach((document) => {
+    if (document.languageId === 'tcs') {
+      validator.validate(document);
+    }
+  });
+
+  // 注册验证器事件
+  context.subscriptions.push(
+    vscode.workspace.onDidOpenTextDocument((document) => {
+      if (document.languageId === 'tcs') {
+        validator.validate(document);
+      }
+    }),
+    vscode.workspace.onDidChangeTextDocument((event) => {
+      if (event.document.languageId === 'tcs') {
+        validator.validate(event.document);
+      }
+    }),
+    vscode.workspace.onDidCloseTextDocument((document) => {
+      if (document.languageId === 'tcs') {
+        validator.clear();
+      }
+    })
+  );
+
+  const formatter = new Formatter();
+
+  // 注册格式化器
+  context.subscriptions.push(
+    vscode.languages.registerDocumentFormattingEditProvider('tcs', formatter),
+    // 注册保存时自动格式化
+    vscode.workspace.onDidSaveTextDocument((document) => {
+      if (document.languageId === 'tcs') {
+        vscode.commands.executeCommand('editor.action.formatDocument');
+      }
+    })
+  );
+
   const decorator = new MyDecorator(registerManager, alarmManager);
   decorator.update(vscode.window.activeTextEditor);
 
@@ -81,33 +122,6 @@ export async function activate(context: vscode.ExtensionContext) {
 
   // 注册悬浮提示
   context.subscriptions.push(vscode.languages.registerHoverProvider('tcs', new MyHoverProvider()));
-
-  const validator = new Validator();
-  const formatter = new Formatter();
-
-  // 注册代码验证器
-  context.subscriptions.push(
-    vscode.workspace.onDidOpenTextDocument((document) => {
-      validator.validate(document);
-    }),
-    vscode.workspace.onDidChangeTextDocument((event) => {
-      validator.validate(event.document);
-    }),
-    vscode.workspace.onDidCloseTextDocument((document) => {
-      validator.clear();
-    })
-  );
-
-  // 注册格式化器
-  context.subscriptions.push(
-    vscode.languages.registerDocumentFormattingEditProvider('tcs', formatter),
-    // 注册保存时自动格式化
-    vscode.workspace.onDidSaveTextDocument((document) => {
-      if (document.languageId === 'tcs') {
-        vscode.commands.executeCommand('editor.action.formatDocument');
-      }
-    })
-  );
 }
 
 // This method is called when your extension is deactivated
