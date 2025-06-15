@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import RegisterManager from '../modules/register';
 import AlarmManager from '../modules/alarm';
 import { keywordMap } from '../constants/keywords';
+import { Parser } from './parser';
 
 interface ParamDefinition {
   type: string;
@@ -47,37 +48,6 @@ export default class MyDecorator {
     );
   }
 
-  private parseCommandAndParams(
-    lineText: string
-  ): { command: string; params: string[]; paramPositions: number[] } | null {
-    const commandMatch = lineText.match(/^\s*(\w+)\s*(.*)/);
-    if (!commandMatch) return null;
-
-    const command = commandMatch[1];
-    const paramsText = commandMatch[2];
-
-    const params: string[] = [];
-    const paramPositions: number[] = [];
-
-    // 记录每个参数的起始位置
-    let currentPos = lineText.indexOf(command) + command.length;
-    const paramsList = paramsText.split(',');
-
-    for (const param of paramsList) {
-      const trimmedParam = param.trim();
-      if (trimmedParam) {
-        const paramPos = lineText.indexOf(trimmedParam, currentPos);
-        if (paramPos !== -1) {
-          params.push(trimmedParam);
-          paramPositions.push(paramPos);
-          currentPos = paramPos + trimmedParam.length;
-        }
-      }
-    }
-
-    return { command, params, paramPositions };
-  }
-
   private createDecoration(range: vscode.Range, description: string): vscode.DecorationOptions {
     return {
       range,
@@ -98,45 +68,58 @@ export default class MyDecorator {
 
     for (let i = 0; i < document.lineCount; i++) {
       const lineText = document.lineAt(i).text;
-      const parsed = this.parseCommandAndParams(lineText);
+      const trimmedText = lineText.trim();
 
-      if (!parsed || !keywords[parsed.command]) continue;
+      // 跳过空行和注释行
+      if (!trimmedText || trimmedText.startsWith('//') || trimmedText.startsWith('/*')) {
+        continue;
+      }
 
-      const { command, params, paramPositions } = parsed;
+      const parseResult = Parser.parseLine(lineText, i);
+      if (!parseResult.tokens.length) continue;
+
+      const commandToken = parseResult.tokens[0];
+      const paramTokens = parseResult.tokens.slice(1);
+      const command = commandToken.text.toLowerCase();
+
+      // 检查命令是否有效
+      if (!Object.hasOwn(keywords, command)) continue;
+
       const keyword = keywords[command];
 
-      // 处理每个参数
-      keyword.params.forEach((paramDef: ParamDefinition, index: number) => {
-        if (index >= params.length) return;
+      // 为每个参数添加装饰
+      paramTokens.forEach((token, index) => {
+        if (index >= keyword.params.length) return;
 
-        const param = params[index];
-        let description: string | undefined;
-
-        // 根据参数类型添加装饰
-        if (paramDef.type === 'address' && paramDef.completer === 'register') {
-          description = this.registerLibrary[param];
-        } else if (paramDef.type === 'code') {
-          description = this.alarmLibrary[param];
-        } else if (paramDef.type === 'time') {
-          description = '秒';
+        const param = keyword.params[index];
+        const value = token.text;
+        let description = '';        // 根据参数类型和completer添加描述
+        switch (param.type.toLowerCase()) {
+          case 'address':
+            // 根据completer类型显示对应描述
+            if (param.completer === 'register') {
+              description = this.registerLibrary[value] || '未知寄存器';
+            } else if (param.completer === 'alarm') {
+              description = this.alarmLibrary[value] || '未知告警码';
+            }
+            break;
+          case 'code':
+            // 根据completer显示对应的描述
+            if (param.completer === 'register') {
+              description = this.registerLibrary[value] || '未知寄存器';
+            } else if (param.completer === 'alarm') {
+              description = this.alarmLibrary[value] || '未知告警码';
+            }
+            break;
+          case 'time':
+            if (value) {
+              description = '秒';
+            }
+            break;
         }
 
         if (description) {
-          const paramStart = paramPositions[index];
-          if (paramStart !== -1) {
-            // 检查这个位置是否已经有装饰器
-            const existingDecoration = decorations.find(
-              (d) => d.range.start.line === i && d.range.start.character === paramStart
-            );
-
-            if (!existingDecoration) {
-              const range = new vscode.Range(
-                new vscode.Position(i, paramStart),
-                new vscode.Position(i, paramStart + param.length)
-              );
-              decorations.push(this.createDecoration(range, description));
-            }
-          }
+          decorations.push(this.createDecoration(token.range, description));
         }
       });
     }
