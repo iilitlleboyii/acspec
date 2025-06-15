@@ -57,11 +57,39 @@ export default class Validator {
   }
 
   /**
+   * 去除行尾注释
+   * 处理两种注释形式：
+   * 1. // 单行注释
+   * 2. /* 多行注释开始
+   */
+  private removeLineComment(line: string): string {
+    // 查找第一个注释开始位置
+    const singleLineComment = line.indexOf('//');
+    const multiLineComment = line.indexOf('/*');
+    
+    let commentStart = -1;
+    if (singleLineComment >= 0 && multiLineComment >= 0) {
+      commentStart = Math.min(singleLineComment, multiLineComment);
+    } else if (singleLineComment >= 0) {
+      commentStart = singleLineComment;
+    } else if (multiLineComment >= 0) {
+      commentStart = multiLineComment;
+    }
+
+    return commentStart >= 0 ? line.substring(0, commentStart).trim() : line.trim();
+  }
+
+  /**
    * 校验单行代码
    */
   private validateLine(lineText: string, lineNumber: number): ValidationError[] {
     const errors: ValidationError[] = [];
-    const parts = lineText.split(/\s+/);
+    
+    // 去除注释
+    const codeText = this.removeLineComment(lineText);
+    if (!codeText) return errors;
+
+    const parts = codeText.split(/\s+/);
     const command = parts[0];
 
     // 校验关键字
@@ -84,7 +112,7 @@ export default class Validator {
     }
 
     // 获取参数
-    const params = this.parseParams(lineText.substring(command.length).trim());
+    const params = this.parseParams(codeText.substring(command.length).trim());
     const keyword = this.keywords[command.toLowerCase()];
 
     // 校验参数数量
@@ -147,10 +175,12 @@ export default class Validator {
    * 解析参数
    */
   private parseParams(paramsText: string): string[] {
-    return paramsText
+    // 先清理可能的行尾注释
+    const cleanText = this.removeLineComment(paramsText);
+    return cleanText
       .split(',')
-      .map((p) => p.trim())
-      .filter((p) => p.length > 0);
+      .map(p => p.trim())
+      .filter(p => p.length > 0);
   }
 
   /**

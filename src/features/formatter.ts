@@ -25,6 +25,35 @@ export default class Formatter implements vscode.DocumentFormattingEditProvider 
     this.keywords = keywordMap as KeywordMap;
   }
 
+  /**
+   * 从一行文本中分离代码和注释
+   */
+  private separateCodeAndComment(line: string): { code: string; comment: string } {
+    const singleLineComment = line.indexOf('//');
+    const multiLineComment = line.indexOf('/*');
+    
+    let commentStart = -1;
+    if (singleLineComment >= 0 && multiLineComment >= 0) {
+      commentStart = Math.min(singleLineComment, multiLineComment);
+    } else if (singleLineComment >= 0) {
+      commentStart = singleLineComment;
+    } else if (multiLineComment >= 0) {
+      commentStart = multiLineComment;
+    }
+
+    if (commentStart >= 0) {
+      return {
+        code: line.substring(0, commentStart).trim(),
+        comment: line.substring(commentStart)
+      };
+    }
+
+    return {
+      code: line.trim(),
+      comment: ''
+    };
+  }
+
   provideDocumentFormattingEdits(
     document: vscode.TextDocument,
     options: vscode.FormattingOptions
@@ -33,17 +62,20 @@ export default class Formatter implements vscode.DocumentFormattingEditProvider 
 
     for (let i = 0; i < document.lineCount; i++) {
       const line = document.lineAt(i);
-      const lineText = line.text.trim();
+      const lineText = line.text;
 
-      if (!lineText || lineText.startsWith('//')) {
-        // 处理空行和注释行的缩进
-        if (line.text !== lineText) {
-          edits.push(vscode.TextEdit.replace(line.range, lineText));
+      if (!lineText.trim() || lineText.trim().startsWith('//')) {
+        // 处理空行和注释行
+        if (line.text !== lineText.trim()) {
+          edits.push(vscode.TextEdit.replace(line.range, lineText.trim()));
         }
         continue;
       }
 
-      const formattedLine = this.formatLine(lineText);
+      const { code, comment } = this.separateCodeAndComment(lineText);
+      const formattedCode = this.formatCode(code);
+      const formattedLine = comment ? `${formattedCode} ${comment}` : formattedCode;
+
       if (formattedLine !== line.text) {
         edits.push(vscode.TextEdit.replace(line.range, formattedLine));
       }
@@ -52,13 +84,13 @@ export default class Formatter implements vscode.DocumentFormattingEditProvider 
     return edits;
   }
 
-  private formatLine(lineText: string): string {
-    const parts = lineText.split(/\s+/);
+  private formatCode(codeText: string): string {
+    const parts = codeText.split(/\s+/);
     const command = parts[0].toLowerCase();
     
-    if (!this.keywords[command]) return lineText;
+    if (!this.keywords[command]) return codeText;
 
-    const params = this.parseParams(lineText.substring(parts[0].length).trim());
+    const params = this.parseParams(codeText.substring(parts[0].length).trim());
     const keyword = this.keywords[command];
 
     // 格式化参数
@@ -79,7 +111,9 @@ export default class Formatter implements vscode.DocumentFormattingEditProvider 
   }
 
   private parseParams(paramsText: string): string[] {
-    return paramsText.split(',')
+    const { code } = this.separateCodeAndComment(paramsText);
+    return code
+      .split(',')
       .map(p => p.trim())
       .filter(p => p.length > 0);
   }
