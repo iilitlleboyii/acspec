@@ -43,8 +43,12 @@ export default class Validator {
     for (let i = 0; i < document.lineCount; i++) {
       const line = document.lineAt(i);
       const lineText = line.text;
+      const trimmedText = lineText.trim();
 
-      if (!lineText.trim()) continue;
+      // 跳过空行和注释行
+      if (!trimmedText || trimmedText.startsWith('//') || trimmedText.startsWith('/*')) {
+        continue;
+      }
 
       const lineErrors = this.validateLine(lineText, i);
       errors.push(...lineErrors);
@@ -81,14 +85,88 @@ export default class Validator {
 
     // 校验参数
     const keyword = this.keywords[commandToken.text.toLowerCase()];
-    if (paramTokens.length > keyword.params.length) {
-      for (let i = keyword.params.length; i < paramTokens.length; i++) {
+    const params = keyword.params;
+
+    // 检查逗号和参数的匹配
+    const commaCount = lineText.slice(commandToken.range.end.character).split(',').length - 1;
+    if (commaCount > 0) {
+      if (paramTokens.length < commaCount + 1) {
         errors.push({
-          range: paramTokens[i].range,
+          range: new vscode.Range(
+            new vscode.Position(lineNumber, lineText.length),
+            new vscode.Position(lineNumber, lineText.length)
+          ),
+          message: `逗号数量与参数不匹配，缺少参数`,
+          severity: vscode.DiagnosticSeverity.Error
+        });
+      } else if (paramTokens.length > commaCount + 1) {
+        const extraParamToken = paramTokens[commaCount + 1];
+        errors.push({
+          range: extraParamToken.range,
+          message: `逗号数量与参数不匹配，参数过多`,
+          severity: vscode.DiagnosticSeverity.Error
+        });
+      }
+    }
+
+    // 检查参数数量和类型
+    paramTokens.forEach((token, index) => {
+      if (index >= params.length) {
+        errors.push({
+          range: token.range,
           message: '多余的参数',
           severity: vscode.DiagnosticSeverity.Warning
         });
+        return;
+      }      const param = params[index];
+      const value = token.text;      // 检查空参数
+      if (!value) {
+        errors.push({
+          range: new vscode.Range(
+            new vscode.Position(lineNumber, lineText.indexOf(',', commandToken.range.end.character) + 1),
+            new vscode.Position(lineNumber, lineText.indexOf(',', commandToken.range.end.character) + 1)
+          ),
+          message: '参数不能为空',
+          severity: vscode.DiagnosticSeverity.Error
+        });
+        return;
       }
+
+      // 根据参数类型进行校验
+      switch (param.type.toLowerCase()) {
+        case 'address':
+          if (!/^[A-Z][0-9]+$/.test(value)) {
+            errors.push({
+              range: token.range,
+              message: '地址格式错误，应为大写字母开头加数字',
+              severity: vscode.DiagnosticSeverity.Error
+            });
+          }
+          break;
+        case 'time':
+        case 'value':
+        case 'code':
+          if (!/^-?\d+$/.test(value)) {
+            errors.push({
+              range: token.range,
+              message: '需要是数值',
+              severity: vscode.DiagnosticSeverity.Error
+            });
+          }
+          break;
+      }
+    });
+
+    // 检查必需参数是否缺失
+    if (paramTokens.length < params.length) {
+      errors.push({
+        range: new vscode.Range(
+          new vscode.Position(lineNumber, lineText.length),
+          new vscode.Position(lineNumber, lineText.length)
+        ),
+        message: `缺少参数，需要 ${params.length} 个参数`,
+        severity: vscode.DiagnosticSeverity.Error
+      });
     }
 
     return errors;

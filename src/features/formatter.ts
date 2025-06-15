@@ -81,9 +81,24 @@ export default class Formatter implements vscode.DocumentFormattingEditProvider 
     if (!parseResult.tokens.length) return '';
 
     const commandToken = parseResult.tokens[0];
-    const paramTokens = parseResult.tokens.slice(1);    let formatted = commandToken.text.toLowerCase();
+    const paramTokens = parseResult.tokens.slice(1);
+
+    // 如果是无效命令，保持原始格式
+    if (!Object.hasOwn(this.keywords, commandToken.text.toLowerCase())) {
+      return commandToken.text + (paramTokens.length > 0 ? ' ' + paramTokens.map(token => token.text).join(', ') : '');
+    }
+
+    const keyword = this.keywords[commandToken.text.toLowerCase()];
+    let formatted = commandToken.text.toLowerCase();
+
     if (paramTokens.length > 0) {
-      formatted += ' ' + paramTokens.map(token => token.text).join(', ');
+      formatted += ' ' + paramTokens.map((token, index) => {
+        // 如果是地址类型参数，转为大写
+        if (index < keyword.params.length && keyword.params[index].type.toLowerCase() === 'address') {
+          return token.text.toUpperCase();
+        }
+        return token.text;
+      }).join(', ');
     }
 
     return formatted;
