@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import RegisterManager from '../modules/register';
 import AlarmManager from '../modules/alarm';
 import { keywordMap } from '../constants/keywords';
-import { Parser } from './parser';
+import Parser from './parser';
 
 interface ParamDefinition {
   type: string;
@@ -98,7 +98,7 @@ export default class MyDecorator {
         if (!value || !value.trim()) {
           return;
         }
-        
+
         let description = '';
 
         // 根据参数类型和completer添加描述

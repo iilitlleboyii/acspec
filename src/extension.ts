@@ -7,7 +7,7 @@ import RegisterManager from './modules/register';
 import AlarmManager from './modules/alarm';
 import MyDecorator from './features/decorator';
 import Validator from './features/validator';
-import Formatter from './features/formatter';
+import Formatter from './provider/formatter';
 
 // This method is called when your extension is activated
 // Your extension is activated the very first time the command is executed
@@ -34,14 +34,14 @@ export async function activate(context: vscode.ExtensionContext) {
 
   const validator = new Validator();
 
-  // 首次激活时验证所有打开的tcs文件
+  // 首次激活时校验所有打开的tcs文件
   vscode.workspace.textDocuments.forEach((document) => {
     if (document.languageId === 'tcs') {
       validator.validate(document);
     }
   });
 
-  // 注册验证器事件
+  // 注册校验器事件
   context.subscriptions.push(
     vscode.workspace.onDidOpenTextDocument((document) => {
       if (document.languageId === 'tcs') {
@@ -52,22 +52,18 @@ export async function activate(context: vscode.ExtensionContext) {
       if (event.document.languageId === 'tcs') {
         validator.validate(event.document);
       }
-    }),
-    vscode.workspace.onDidCloseTextDocument((document) => {
-      // 不再需要在关闭文档时清除诊断信息
     })
   );
 
-  const formatter = new Formatter();
-
   // 注册格式化器
-  context.subscriptions.push(
-    vscode.languages.registerDocumentFormattingEditProvider('tcs', formatter)
-  );
+  context.subscriptions.push(vscode.languages.registerDocumentFormattingEditProvider('tcs', new Formatter()));
 
   const decorator = new MyDecorator(registerManager, alarmManager);
+
+  // 首次激活时装饰所有打开的tcs文件
   decorator.update(vscode.window.activeTextEditor);
 
+  // 注册装饰器事件
   context.subscriptions.push(
     vscode.window.onDidChangeActiveTextEditor((editor) => {
       decorator.update(editor);
@@ -78,6 +74,14 @@ export async function activate(context: vscode.ExtensionContext) {
       }
     })
   );
+
+  // 注册提示补全
+  context.subscriptions.push(
+    vscode.languages.registerCompletionItemProvider('tcs', new MyCompletionItemProvider(registerManager, alarmManager))
+  );
+
+  // 注册悬浮提示
+  context.subscriptions.push(vscode.languages.registerHoverProvider('tcs', new MyHoverProvider()));
 
   // 注册更新寄存器库命令
   context.subscriptions.push(
@@ -106,14 +110,6 @@ export async function activate(context: vscode.ExtensionContext) {
       await alarmManager.switchAlarmLibrary();
     })
   );
-
-  // 注册提示补全
-  context.subscriptions.push(
-    vscode.languages.registerCompletionItemProvider('tcs', new MyCompletionItemProvider(registerManager, alarmManager))
-  );
-
-  // 注册悬浮提示
-  context.subscriptions.push(vscode.languages.registerHoverProvider('tcs', new MyHoverProvider()));
 }
 
 // This method is called when your extension is deactivated

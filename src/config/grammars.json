@@ -64,18 +64,6 @@
           "name": "comment.line.double-slash.tcs",
           "begin": "//",
           "end": "$"
-        },
-        {
-          "name": "comment.block.tcs",
-          "begin": "/\\*",
-          "end": "\\*/",
-          "contentName": "emphasis",
-          "patterns": [
-            {
-              "name": "emphasis",
-              "match": ".+?"
-            }
-          ]
         }
       ]
     },

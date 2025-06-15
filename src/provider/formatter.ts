@@ -1,35 +1,9 @@
 import * as vscode from 'vscode';
 import { keywordMap } from '../constants/keywords';
-import { Parser, ParseResult } from './parser';
-
-interface ParamDefinition {
-  type: string;
-  placeholder: string;
-  completer?: string;
-}
-
-interface KeywordDefinition {
-  title: string;
-  document: string;
-  snippet: string;
-  params: ParamDefinition[];
-}
-
-type KeywordMap = {
-  [key: string]: KeywordDefinition;
-};
+import Parser, { type ParseResult } from '../features/parser';
 
 export default class Formatter implements vscode.DocumentFormattingEditProvider {
-  private keywords: KeywordMap;
-
-  constructor() {
-    this.keywords = keywordMap as KeywordMap;
-  }
-
-  provideDocumentFormattingEdits(
-    document: vscode.TextDocument,
-    options: vscode.FormattingOptions
-  ): vscode.TextEdit[] {
+  provideDocumentFormattingEdits(document: vscode.TextDocument, options: vscode.FormattingOptions): vscode.TextEdit[] {
     const edits: vscode.TextEdit[] = [];
 
     for (let i = 0; i < document.lineCount; i++) {
@@ -46,7 +20,7 @@ export default class Formatter implements vscode.DocumentFormattingEditProvider 
       }
 
       // 如果是纯注释行，保持原样
-      if (trimmedText.startsWith('//') || trimmedText.startsWith('/*')) {
+      if (trimmedText.startsWith('//')) {
         if (line.text !== trimmedText) {
           edits.push(vscode.TextEdit.replace(line.range, trimmedText));
         }
@@ -65,7 +39,7 @@ export default class Formatter implements vscode.DocumentFormattingEditProvider 
 
       // 格式化代码部分
       const formattedCode = this.formatTokens(parseResult);
-      
+
       // 组合最终格式化结果
       const formattedLine = comment ? `${formattedCode} ${comment}` : formattedCode;
 
@@ -78,27 +52,33 @@ export default class Formatter implements vscode.DocumentFormattingEditProvider 
   }
 
   private formatTokens(parseResult: ParseResult): string {
-    if (!parseResult.tokens.length) return '';
+    if (parseResult.tokens.length === 0) return '';
 
     const commandToken = parseResult.tokens[0];
     const paramTokens = parseResult.tokens.slice(1);
 
     // 如果是无效命令，保持原始格式
-    if (!Object.hasOwn(this.keywords, commandToken.text.toLowerCase())) {
-      return commandToken.text + (paramTokens.length > 0 ? ' ' + paramTokens.map(token => token.text).join(', ') : '');
+    if (!Object.hasOwn(keywordMap, commandToken.text.toLowerCase())) {
+      return (
+        commandToken.text + (paramTokens.length > 0 ? ' ' + paramTokens.map((token) => token.text).join(', ') : '')
+      );
     }
 
-    const keyword = this.keywords[commandToken.text.toLowerCase()];
-    let formatted = commandToken.text.toLowerCase();
+    const params = keywordMap[commandToken.text.toLowerCase() as keyof typeof keywordMap].params;
+    let formatted = commandToken.text;
 
     if (paramTokens.length > 0) {
-      formatted += ' ' + paramTokens.map((token, index) => {
-        // 如果是地址类型参数，转为大写
-        if (index < keyword.params.length && keyword.params[index].type.toLowerCase() === 'address') {
-          return token.text.toUpperCase();
-        }
-        return token.text;
-      }).join(', ');
+      formatted +=
+        ' ' +
+        paramTokens
+          .map((token, index) => {
+            // 如果是地址类型参数，转为大写
+            if (index < params.length && params[index].type === 'address') {
+              return token.text.toUpperCase();
+            }
+            return token.text;
+          })
+          .join(', ');
     }
 
     return formatted;
