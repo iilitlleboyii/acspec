@@ -104,19 +104,13 @@ export default class MyDecorator {
         // 根据参数类型和completer添加描述
         switch (param.type.toLowerCase()) {
           case 'address':
-            // 根据completer类型显示对应描述
             if (param.completer === 'register') {
               description = this.registerLibrary[value] || '未知寄存器';
-            } else if (param.completer === 'alarm') {
-              description = this.alarmLibrary[value] || '未知告警码';
             }
             break;
           case 'code':
-            // 根据completer显示对应的描述
-            if (param.completer === 'register') {
-              description = this.registerLibrary[value] || '未知寄存器';
-            } else if (param.completer === 'alarm') {
-              description = this.alarmLibrary[value] || '未知告警码';
+            if (param.completer === 'alarm') {
+              description = this.alarmLibrary[value].replace(/\(.*$/, '') || '未知告警码';
             }
             break;
           case 'time':
