@@ -43,7 +43,6 @@ export default class MyCompletionItemProvider implements vscode.CompletionItemPr
 
     // 提供中文告警码补全
     const alarmLibrary = this.alarmManager.getAlarmLibrary();
-    console.log('@alarmLibrary 🚀🚀🚀~ ', alarmLibrary)
     const alarmItems = Object.entries(alarmLibrary).map(([label, code]) => {
       const item = new vscode.CompletionItem(label, vscode.CompletionItemKind.Constant);
       item.insertText = new vscode.SnippetString(code);

@@ -105,12 +105,12 @@ export default class MyDecorator {
         switch (param.type.toLowerCase()) {
           case 'address':
             if (param.completer === 'register') {
-              description = this.registerLibrary[value] || '未知寄存器';
+              description = this.registerLibrary[value]?.replace(/\(.*$/, '') || '未知寄存器';
             }
             break;
           case 'code':
             if (param.completer === 'alarm') {
-              description = this.alarmLibrary[value].replace(/\(.*$/, '') || '未知告警码';
+              description = this.alarmLibrary[value]?.replace(/\(.*$/, '') || '未知告警码';
             }
             break;
           case 'time':
