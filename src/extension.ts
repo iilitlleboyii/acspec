@@ -1,6 +1,8 @@
 // The module 'vscode' contains the VS Code extensibility API
 // Import the module and reference it with the alias vscode in your code below
 import * as vscode from 'vscode';
+import path from 'node:path';
+import fs from 'node:fs';
 import MyCompletionItemProvider from './provider/completionItem';
 import MyHoverProvider from './provider/hover';
 import RegisterManager from './modules/register';
@@ -8,6 +10,8 @@ import AlarmManager from './modules/alarm';
 import MyDecorator from './features/decorator';
 import Validator from './features/validator';
 import Formatter from './provider/formatter';
+
+let panel: vscode.WebviewPanel | undefined;
 
 // This method is called when your extension is activated
 // Your extension is activated the very first time the command is executed
@@ -41,7 +45,7 @@ export async function activate(context: vscode.ExtensionContext) {
     }
   });
 
-  // 注册校验器事件
+  // 注册文档监听事件
   context.subscriptions.push(
     vscode.workspace.onDidOpenTextDocument((document) => {
       if (document.languageId === 'tcs') {
@@ -51,6 +55,20 @@ export async function activate(context: vscode.ExtensionContext) {
     vscode.workspace.onDidChangeTextDocument((event) => {
       if (event.document.languageId === 'tcs') {
         validator.validate(event.document);
+      }
+    }),
+    vscode.workspace.onDidSaveTextDocument((document) => {
+      if (document.languageId === 'tcs') {
+        validator.validate(document);
+        const isValid = validator.isValid();
+        if (panel && isValid) {
+          const content = document.getText();
+          panel.webview.postMessage({
+            type: 'document',
+            content: content,
+            timestamp: new Date().toISOString()
+          });
+        }
       }
     })
   );
@@ -83,6 +101,36 @@ export async function activate(context: vscode.ExtensionContext) {
   // 注册悬浮提示
   context.subscriptions.push(vscode.languages.registerHoverProvider('tcs', new MyHoverProvider()));
 
+  // 注册设备通信配置命令
+  context.subscriptions.push(
+    vscode.commands.registerCommand('acspec.equipmentCommunicationConfig', async () => {
+      const terminal = await vscode.window.showInputBox({
+        title: '终端名字',
+        placeHolder: '请输入终端名字',
+        prompt: '终端名字与工具的相同',
+        ignoreFocusOut: true
+      });
+
+      if (!terminal) return;
+
+      await vscode.workspace
+        .getConfiguration('acspec')
+        .update('equipmentCommunicationConfig', { host: '192.168.11.10', terminal: terminal }, true);
+
+      vscode.window.showInformationMessage('设备通信配置: 保存成功！');
+
+      if (!panel) {
+        vscode.commands.executeCommand('acspec.openDebugPanel');
+      } else {
+        panel.webview.postMessage({
+          type: 'config',
+          host: vscode.workspace.getConfiguration('acspec').get('equipmentCommunicationConfig.host') as string,
+          terminal: vscode.workspace.getConfiguration('acspec').get('equipmentCommunicationConfig.terminal') as string
+        });
+      }
+    })
+  );
+
   // 注册更新寄存器库命令
   context.subscriptions.push(
     vscode.commands.registerCommand('acspec.updateRegisterLibraries', async () => {
@@ -108,6 +156,103 @@ export async function activate(context: vscode.ExtensionContext) {
   context.subscriptions.push(
     vscode.commands.registerCommand('acspec.switchAlarmLibrary', async () => {
       await alarmManager.switchAlarmLibrary();
+    })
+  );
+
+  // 注册打开调试面板的命令
+  context.subscriptions.push(
+    vscode.commands.registerCommand('acspec.openDebugPanel', () => {
+      if (!panel) {
+        panel = vscode.window.createWebviewPanel('acspec-debug', 'AcSpec调试面板', vscode.ViewColumn.Two, {
+          enableScripts: true,
+          localResourceRoots: [vscode.Uri.file(context.extensionPath)],
+          retainContextWhenHidden: true
+        });
+
+        panel.onDidDispose(() => (panel = undefined));
+      } else {
+        panel.reveal();
+      }
+
+      const url = vscode.workspace.getConfiguration('acspec').get('debugPanelUrl') as string;
+
+      if (!url) {
+        vscode.window.showErrorMessage('加载调试面板失败：远程调试地址请求出错！');
+        return;
+      }
+
+      panel.webview.html = getWebviewContent(context, url);
+
+      // 监听 Webview 的消息
+      panel.webview.onDidReceiveMessage((message) => {
+        if (message.type === 'goto-line') {
+          moveCursorToLine(message.line);
+        }
+        if (message.type === 'webview-loaded') {
+          panel!.webview.postMessage({
+            type: 'config',
+            host: vscode.workspace.getConfiguration('acspec').get('equipmentCommunicationConfig.host') as string,
+            terminal: vscode.workspace.getConfiguration('acspec').get('equipmentCommunicationConfig.terminal') as string
+          });
+        }
+      });
+
+      // 生成 Webview HTML（带 CSP 放宽）
+      function getWebviewContent(context: vscode.ExtensionContext, url: string): string {
+        const templatePath = path.join(context.extensionPath, '/src/templates/debug-panel.html');
+        const template = fs.readFileSync(templatePath, 'utf-8');
+        return template.replace('{{src}}', url);
+      }
+
+      // 移动光标到指定行并选中
+      async function moveCursorToLine(lineNumber: number) {
+        const editors = vscode.window.visibleTextEditors;
+
+        if (editors.length === 0) return;
+
+        const acspecEditors = editors.find((editor) => editor.document.languageId === 'tcs');
+
+        if (!acspecEditors) return;
+
+        const targetEditor = acspecEditors;
+
+        // 激活目标编辑器
+        await vscode.window.showTextDocument(targetEditor.document, {
+          viewColumn: targetEditor.viewColumn,
+          preserveFocus: true
+        });
+
+        const line = Math.max(0, lineNumber - 1);
+        const lineText = targetEditor.document.lineAt(line).text;
+
+        const startPosition = new vscode.Position(line, 0);
+        const endPosition = new vscode.Position(line, lineText.length);
+
+        // 移动光标
+        targetEditor.selection = new vscode.Selection(endPosition, endPosition);
+
+        const decorationType = vscode.window.createTextEditorDecorationType({
+          backgroundColor: 'transparent',
+          border: '1px solid #FF0000',
+          borderRadius: '2px',
+          overviewRulerColor: 'rgba(255,0,0,0.8)',
+          overviewRulerLane: vscode.OverviewRulerLane.Full
+        });
+        // 装饰范围
+        const decoration = {
+          range: new vscode.Range(startPosition, endPosition)
+        };
+        // 应用装饰
+        targetEditor.setDecorations(decorationType, [decoration]);
+
+        // 滚动到选中的行
+        targetEditor.revealRange(targetEditor.selection, vscode.TextEditorRevealType.InCenter);
+
+        // 1秒后自动清除装饰
+        setTimeout(() => {
+          decorationType.dispose();
+        }, 1000);
+      }
     })
   );
 }

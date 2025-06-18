@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src * 'unsafe-inline' 'unsafe-eval';frame-src *;connect-src * ws://* wss://*;"
+    />
+    <title>Debug-Panel</title>
+  </head>
+  <body>
+    <iframe
+      id="vue-frame"
+      src="{{src}}"
+      width="100%"
+      height="100%"
+      frameborder="0"
+      style="border: none; position: absolute; left: 0; top: 0"
+    >
+    </iframe>
+    <script>
+      const vscode = acquireVsCodeApi();
+
+      window.addEventListener('message', (event) => {
+        // vscode -> webview
+        const iframe = document.getElementById('vue-frame');
+        if (event.data.type === 'document') {
+          iframe.contentWindow.postMessage(event.data, '*');
+        }
+        if (event.data.type === 'config') {
+          iframe.contentWindow.postMessage(event.data, '*');
+        }
+        // iframe -> webview
+        if (event.data.type === 'goto-line') {
+          vscode.postMessage(event.data);
+        }
+        if (event.data.type === 'webview-loaded') {
+          vscode.postMessage(event.data);
+        }
+      });
+    </script>
+  </body>
+</html>

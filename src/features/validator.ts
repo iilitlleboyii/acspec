@@ -11,8 +11,14 @@ interface ValidationError {
 export default class Validator {
   private diagnosticCollection: vscode.DiagnosticCollection;
 
+  private valid = true;
+
   constructor() {
     this.diagnosticCollection = vscode.languages.createDiagnosticCollection('acspec');
+  }
+
+  public isValid(): boolean {
+    return this.valid;
   }
 
   public validate(document: vscode.TextDocument): void {
@@ -34,6 +40,8 @@ export default class Validator {
       document.uri,
       errors.map((error) => new vscode.Diagnostic(error.range, error.message, error.severity))
     );
+
+    this.valid = errors.length === 0;
   }
 
   private validateLine(lineText: string, lineNumber: number): ValidationError[] {

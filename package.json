@@ -3,18 +3,23 @@
   "displayName": "AcSpec",
   "description": "Quickly write arcuchi test case script.",
   "publisher": "Arcuchi",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "engines": {
     "vscode": "^1.101.0"
   },
   "categories": [
     "Other"
   ],
+  "repository": "xxx",
   "icon": "extension-icon.png",
   "activationEvents": [],
   "main": "./out/extension.js",
   "contributes": {
     "commands": [
+      {
+        "title": "AcSpec: 设备通信配置",
+        "command": "acspec.equipmentCommunicationConfig"
+      },
       {
         "title": "AcSpec: 更新寄存器库",
         "command": "acspec.updateRegisterLibraries"
@@ -30,8 +35,46 @@
       {
         "title": "AcSpec: 切换告警码库",
         "command": "acspec.switchAlarmLibrary"
+      },
+      {
+        "title": "AcSpec: 打开调试面板",
+        "command": "acspec.openDebugPanel"
       }
     ],
+    "menus": {
+      "editor/context": [
+        {
+          "command": "acspec.openDebugPanel",
+          "group": "navigation@1",
+          "when": "editorLangId == tcs"
+        },
+        {
+          "command": "acspec.updateRegisterLibraries",
+          "group": "navigation@2",
+          "when": "editorLangId == tcs"
+        },
+        {
+          "command": "acspec.switchRegisterLibrary",
+          "group": "navigation@3",
+          "when": "editorLangId == tcs"
+        },
+        {
+          "command": "acspec.updateAlarmLibraries",
+          "group": "navigation@4",
+          "when": "editorLangId == tcs"
+        },
+        {
+          "command": "acspec.switchAlarmLibrary",
+          "group": "navigation@5",
+          "when": "editorLangId == tcs"
+        },
+        {
+          "command": "acspec.equipmentCommunicationConfig",
+          "group": "navigation@6",
+          "when": "editorLangId == tcs"
+        }
+      ]
+    },
     "configuration": {
       "title": "AcSpec",
       "properties": {
@@ -59,6 +102,19 @@
           "type": "string",
           "default": "https://as.arcuchi.com/updater/AlarmLibrary",
           "description": "告警码库远程下载地址"
+        },
+        "acspec.debugPanelUrl": {
+          "type": "string",
+          "default": "http://172.16.30.58:8089/debug-panel",
+          "description": "远程调试地址"
+        },
+        "acspec.equipmentCommunicationConfig": {
+          "type": "object",
+          "default": {
+            "host": "192.168.11.10",
+            "terminal": "admin"
+          },
+          "description": "设备通信配置"
         }
       }
     },
@@ -98,7 +154,9 @@
     "watch": "tsc -watch -p ./",
     "pretest": "npm run compile && npm run lint",
     "lint": "eslint src",
-    "test": "vscode-test"
+    "test": "vscode-test",
+    "pack": "vsce package",
+    "publish": "vsce publish"
   },
   "devDependencies": {
     "@types/mocha": "^10.0.10",
