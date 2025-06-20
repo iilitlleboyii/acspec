@@ -39,7 +39,10 @@ export default class MyDecorator {
 
     this.registerManager = registerManager;
     this.registerLibrary = Object.fromEntries(
-      Object.entries(this.registerManager.getRegisterLibrary()).map(([key, value]) => [value, key])
+      Object.entries(this.registerManager.getRegisterLibrary()).map(([key, config]) => [
+        config.register,
+        { ...config, label: key }
+      ])
     );
 
     this.alarmManager = alarmManager;
@@ -106,7 +109,14 @@ export default class MyDecorator {
         switch (param.type.toLowerCase()) {
           case 'address':
             if (param.completer === 'register') {
-              description = this.registerLibrary[value]?.replace(/\(.*$/, '') || '未知寄存器';
+              const config = this.registerLibrary[value];
+              description = config.label?.replace(/\(.*$/, '') || '未知寄存器';
+            }
+            break;
+          case 'value':
+            if (command === 'write' && paramTokens.length === 2) {
+              const config = this.registerLibrary[paramTokens[0].text];
+              description = config.options?.find((option: any) => option.value === String(value))?.title || '';
             }
             break;
           case 'code':

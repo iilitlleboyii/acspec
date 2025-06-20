@@ -18,7 +18,10 @@ export default class MyCompletionItemProvider implements vscode.CompletionItemPr
     token: vscode.CancellationToken,
     context: vscode.CompletionContext
   ): vscode.ProviderResult<vscode.CompletionItem[] | vscode.CompletionList<vscode.CompletionItem>> {
-    const lineText = document.lineAt(position).text;
+    const line = document.lineAt(position);
+    const lineText = line.text;
+    const lineRange = line.range;
+    const wordRange = document.getWordRangeAtPosition(position) || new vscode.Range(position, position);
 
     // 输入注释时不提供代码补全
     const commentIdx = lineText.indexOf('//');
@@ -34,11 +37,27 @@ export default class MyCompletionItemProvider implements vscode.CompletionItemPr
 
     // 提供中文寄存器补全
     const registerLibrary = this.registerManager.getRegisterLibrary();
-    const registerItems = Object.entries(registerLibrary).map(([label, address]) => {
-      const item = new vscode.CompletionItem(label, vscode.CompletionItemKind.Value);
-      item.insertText = new vscode.SnippetString(address);
-      item.documentation = new vscode.MarkdownString(`${label}: ${address}`);
-      return item;
+    const registerItems = Object.entries(registerLibrary).flatMap(([label, config]) => {
+      if (Array.isArray(config.options) && config.options.length > 0) {
+        const items = config.options.map((option: any) => {
+          const item = new vscode.CompletionItem(
+            `${label} ${option.title}(${option.value})`,
+            vscode.CompletionItemKind.Value
+          );
+          item.insertText = new vscode.SnippetString(`${config.register}, ${option.value}`);
+          item.documentation = new vscode.MarkdownString(
+            `${label}: ${config.register}, ${option.title}: ${option.value}`
+          );
+          item.range = new vscode.Range(wordRange.start, lineRange.end);
+          return item;
+        });
+        return items;
+      } else {
+        const item = new vscode.CompletionItem(label, vscode.CompletionItemKind.Value);
+        item.insertText = new vscode.SnippetString(`${config.register}`);
+        item.documentation = new vscode.MarkdownString(`${label}: ${config.register}`);
+        return item;
+      }
     });
 
     // 提供中文告警码补全
