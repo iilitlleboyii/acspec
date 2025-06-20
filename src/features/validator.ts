@@ -53,8 +53,10 @@ export default class Validator {
     const commandToken = parseResult.tokens[0];
     const paramTokens = parseResult.tokens.slice(1);
 
+    const command = commandToken.text.toLowerCase().replace(/[^a-zA-Z_]/g, '');
+
     // 校验命令
-    if (!Object.hasOwn(keywordMap, commandToken.text.toLowerCase())) {
+    if (!Object.hasOwn(keywordMap, command)) {
       errors.push({
         range: commandToken.range,
         message: '无效的命令',
@@ -63,7 +65,7 @@ export default class Validator {
       return errors;
     }
 
-    const params = keywordMap[commandToken.text.toLowerCase() as keyof typeof keywordMap].params;
+    const params = keywordMap[command as keyof typeof keywordMap].params;
 
     // 检查参数数量
     if (paramTokens.length < params.length) {
@@ -105,7 +107,7 @@ export default class Validator {
       // 根据参数类型进行校验
       switch (param.type) {
         case 'address':
-          if (!/^[A-Z][0-9]+$/.test(value)) {
+          if (!/^[A-Z]+[0-9]+$/.test(value)) {
             errors.push({
               range: token.range,
               message: '格式错误，应为大写字母开头加数字',
