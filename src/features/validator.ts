@@ -13,6 +13,10 @@ export default class Validator {
 
   private valid = true;
 
+  private static readonly COMMAND_PATTERN = /[^a-zA-Z_]/g;
+  private static readonly REGISTER_PATTERN = /^[A-Z]+[0-9]+$/;
+  private static readonly VALUE_PATTERN = /^-?\d+(\.\d+)?$/;
+
   constructor() {
     this.diagnosticCollection = vscode.languages.createDiagnosticCollection('acspec');
   }
@@ -53,7 +57,7 @@ export default class Validator {
     const commandToken = parseResult.tokens[0];
     const paramTokens = parseResult.tokens.slice(1);
 
-    const command = commandToken.text.toLowerCase().replace(/[^a-zA-Z_]/g, '');
+    const command = commandToken.text.toLowerCase().replace(Validator.COMMAND_PATTERN, '');
 
     // 校验命令
     if (!Object.hasOwn(keywordMap, command)) {
@@ -107,7 +111,7 @@ export default class Validator {
       // 根据参数类型进行校验
       switch (param.type) {
         case 'address':
-          if (!/^[A-Z]+[0-9]+$/.test(value)) {
+          if (!Validator.REGISTER_PATTERN.test(value)) {
             errors.push({
               range: token.range,
               message: '格式错误，应为大写字母开头加数字',
@@ -118,7 +122,7 @@ export default class Validator {
         case 'time':
         case 'value':
         case 'code':
-          if (!/^-?\d+$/.test(value)) {
+          if (!Validator.VALUE_PATTERN.test(value)) {
             errors.push({
               range: token.range,
               message: '格式错误，应为数值',

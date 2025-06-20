@@ -18,12 +18,12 @@ export default class Parser {
   private static readonly WHITESPACE = /\s+/;
 
   public static removeLineComment(line: string): string {
-    const commentStart = line.indexOf(this.COMMENT_DELIMITER);
+    const commentStart = line.indexOf(Parser.COMMENT_DELIMITER);
     return commentStart === -1 ? line.trim() : line.slice(0, commentStart).trim();
   }
 
   public static parseParams(paramsText: string): string[] {
-    return paramsText.split(this.PARAM_SEPARATORS).map((p) => p.trim());
+    return paramsText.split(Parser.PARAM_SEPARATORS).map((p) => p.trim());
   }
 
   private static createToken(type: TokenType, text: string, lineNumber: number, startIndex: number): CodeToken {
@@ -41,7 +41,7 @@ export default class Parser {
     const code = this.removeLineComment(line);
     if (!code) return { tokens: [] };
 
-    const parts = code.split(this.WHITESPACE);
+    const parts = code.split(Parser.WHITESPACE);
     const command = parts[0];
     if (!command) return { tokens: [] };
 
