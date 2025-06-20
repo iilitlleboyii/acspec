@@ -80,7 +80,8 @@ export default class MyDecorator {
 
       const commandToken = parseResult.tokens[0];
       const paramTokens = parseResult.tokens.slice(1);
-      const command = commandToken.text.toLowerCase();
+
+      const command = commandToken.text.toLowerCase().replace(/[^a-zA-Z_]/g, '');
 
       // 检查命令是否有效
       if (!Object.hasOwn(keywords, command)) continue;
