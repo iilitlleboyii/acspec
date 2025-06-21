@@ -61,7 +61,6 @@ export async function activate(context: vscode.ExtensionContext) {
     }),
     vscode.workspace.onDidSaveTextDocument((document) => {
       if (document.languageId === 'tcs') {
-        validator.validate(document);
         const isValid = validator.isValid();
         if (panel && isValid) {
           const content = document.getText();
@@ -81,15 +80,21 @@ export async function activate(context: vscode.ExtensionContext) {
   const decorator = new MyDecorator(registerManager, alarmManager, actionManager);
 
   // 首次激活时装饰所有打开的tcs文件
-  decorator.update(vscode.window.activeTextEditor);
+  vscode.window.visibleTextEditors.forEach((editor) => {
+    if (editor.document.languageId === 'tcs') {
+      decorator.update(editor);
+    }
+  });
 
   // 注册装饰器事件
   context.subscriptions.push(
     vscode.window.onDidChangeActiveTextEditor((editor) => {
-      decorator.update(editor);
+      if (editor?.document.languageId === 'tcs') {
+        decorator.update(editor);
+      }
     }),
     vscode.workspace.onDidChangeTextDocument((event) => {
-      if (event.document === vscode.window.activeTextEditor?.document) {
+      if (event.document === vscode.window.activeTextEditor?.document && event.document.languageId === 'tcs') {
         decorator.update(vscode.window.activeTextEditor);
       }
     })

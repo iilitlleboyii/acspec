@@ -119,13 +119,13 @@ export default class MyDecorator {
           case 'address':
             if (param.completer === 'register') {
               const config = this.registerLibrary[value];
-              description = config.label?.replace(/\(.*$/, '') || '未知寄存器';
+              description = config?.label?.replace(/\(.*$/, '') || '未知寄存器';
             }
             break;
           case 'value':
             if (command === 'write' && paramTokens.length === 2) {
               const config = this.registerLibrary[paramTokens[0].text];
-              description = config.options?.find((option: any) => option.value === String(value))?.title || '';
+              description = config?.options?.find((option: any) => option.value === String(value))?.title || '';
             }
             break;
           case 'code':
