@@ -2,14 +2,17 @@ import * as vscode from 'vscode';
 import { keywordMap } from '../constants/keywords';
 import RegisterManager from '../modules/register';
 import AlarmManager from '../modules/alarm';
+import ActionManager from '../modules/action';
 
 export default class MyCompletionItemProvider implements vscode.CompletionItemProvider {
   private registerManager: RegisterManager;
   private alarmManager: AlarmManager;
+  private actionManager: ActionManager;
 
-  constructor(registerManager: RegisterManager, alarmManager: AlarmManager) {
+  constructor(registerManager: RegisterManager, alarmManager: AlarmManager, actionManager: ActionManager) {
     this.registerManager = registerManager;
     this.alarmManager = alarmManager;
+    this.actionManager = actionManager;
   }
 
   provideCompletionItems(
@@ -46,7 +49,7 @@ export default class MyCompletionItemProvider implements vscode.CompletionItemPr
           );
           item.insertText = new vscode.SnippetString(`${config.register}, ${option.value}`);
           item.documentation = new vscode.MarkdownString(
-            `${label}: ${config.register}, ${option.title}: ${option.value}`
+            `寄存器:\n\n${label}: ${config.register}, ${option.title}: ${option.value}`
           );
           item.range = new vscode.Range(wordRange.start, lineRange.end);
           return item;
@@ -55,7 +58,7 @@ export default class MyCompletionItemProvider implements vscode.CompletionItemPr
       } else {
         const item = new vscode.CompletionItem(label, vscode.CompletionItemKind.Value);
         item.insertText = new vscode.SnippetString(`${config.register}`);
-        item.documentation = new vscode.MarkdownString(`${label}: ${config.register}`);
+        item.documentation = new vscode.MarkdownString(`寄存器:\n\n${label}: ${config.register}`);
         return item;
       }
     });
@@ -63,13 +66,24 @@ export default class MyCompletionItemProvider implements vscode.CompletionItemPr
     // 提供中文告警码补全
     const alarmLibrary = this.alarmManager.getAlarmLibrary();
     const alarmItems = Object.entries(alarmLibrary).map(([label, code]) => {
-      const item = new vscode.CompletionItem(label, vscode.CompletionItemKind.Constant);
-      item.insertText = new vscode.SnippetString(code);
-      item.documentation = new vscode.MarkdownString(`${label}`);
+      const item = new vscode.CompletionItem(label, vscode.CompletionItemKind.Class);
+      item.insertText = new vscode.SnippetString(`check_alarm ${code}`);
+      item.documentation = new vscode.MarkdownString(`告警码:\n\n${label}`);
+      item.range = lineRange;
       return item;
     });
 
-    return [...keywordItems, ...registerItems, ...alarmItems];
+    // 提供动作状态码补全
+    const actionLibrary = this.actionManager.getActionLibrary();
+    const actionItems = Object.entries(actionLibrary).map(([label, code]) => {
+      const item = new vscode.CompletionItem(label, vscode.CompletionItemKind.Interface);
+      item.insertText = new vscode.SnippetString(`check_action ${code}`);
+      item.documentation = new vscode.MarkdownString(`动作状态码:\n\n${label}`);
+      item.range = lineRange;
+      return item;
+    });
+
+    return [...keywordItems, ...registerItems, ...alarmItems, ...actionItems];
   }
 
   resolveCompletionItem?(

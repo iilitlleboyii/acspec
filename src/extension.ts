@@ -7,6 +7,7 @@ import MyCompletionItemProvider from './provider/completionItem';
 import MyHoverProvider from './provider/hover';
 import RegisterManager from './modules/register';
 import AlarmManager from './modules/alarm';
+import ActionManager from './modules/action';
 import MyDecorator from './features/decorator';
 import Validator from './features/validator';
 import Formatter from './provider/formatter';
@@ -20,7 +21,7 @@ export async function activate(context: vscode.ExtensionContext) {
   // This line of code will only be executed once when your extension is activated
   console.log('Congratulations, your extension "acspec" is now active!');
 
-  vscode.window.showInformationMessage('AcSpec扩展已激活！');
+  // vscode.window.showInformationMessage('AcSpec扩展已激活！');
 
   // The command has been defined in the package.json file
   // Now provide the implementation of the command with registerCommand
@@ -28,6 +29,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
   const registerManager = new RegisterManager(context);
   const alarmManager = new AlarmManager(context);
+  const actionManager = new ActionManager(context);
 
   const autoUpdate = vscode.workspace.getConfiguration('acspec').get('autoUpdate');
   if (autoUpdate) {
@@ -76,7 +78,7 @@ export async function activate(context: vscode.ExtensionContext) {
   // 注册格式化器
   context.subscriptions.push(vscode.languages.registerDocumentFormattingEditProvider('tcs', new Formatter()));
 
-  const decorator = new MyDecorator(registerManager, alarmManager);
+  const decorator = new MyDecorator(registerManager, alarmManager, actionManager);
 
   // 首次激活时装饰所有打开的tcs文件
   decorator.update(vscode.window.activeTextEditor);
@@ -95,7 +97,10 @@ export async function activate(context: vscode.ExtensionContext) {
 
   // 注册提示补全
   context.subscriptions.push(
-    vscode.languages.registerCompletionItemProvider('tcs', new MyCompletionItemProvider(registerManager, alarmManager))
+    vscode.languages.registerCompletionItemProvider(
+      'tcs',
+      new MyCompletionItemProvider(registerManager, alarmManager, actionManager)
+    )
   );
 
   // 注册悬浮提示

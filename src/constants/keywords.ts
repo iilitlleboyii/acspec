@@ -78,6 +78,18 @@ export const keywordMap = {
       }
     ]
   },
+  check_action: {
+    title: '动作状态检测',
+    document: '检测动作状态\n\n格式: check_action <状态码>',
+    snippet: 'check_action ${1:状态码}',
+    params: [
+      {
+        type: 'code',
+        placeholder: '状态码',
+        completer: 'action'
+      }
+    ]
+  },
   check_range: {
     title: '范围检测',
     document: '检测寄存器值是否满足值区间\n\n格式: check_range <地址>, <最小值>, <最大值>',

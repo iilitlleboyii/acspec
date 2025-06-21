@@ -23,7 +23,7 @@
       "patterns": [
         {
           "name": "keyword.control.tcs",
-          "match": "(?<!\\w)(write|check|delay|linear_input|check_alarm|check_range|reg_assign|reg_check|watch|unwatch)(?!\\w)"
+          "match": "(?<!\\w)(write|check|delay|linear_input|check_alarm|check_action|check_range|reg_assign|reg_check|watch|unwatch)(?!\\w)"
         }
       ]
     },

@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import RegisterManager from '../modules/register';
 import AlarmManager from '../modules/alarm';
+import ActionManager from '../modules/action';
 import { keywordMap } from '../constants/keywords';
 import Parser from './parser';
 
@@ -30,7 +31,10 @@ export default class MyDecorator {
   private alarmManager: AlarmManager;
   private alarmLibrary: Record<string, any>;
 
-  constructor(registerManager: RegisterManager, alarmManager: AlarmManager) {
+  private actionManager: ActionManager;
+  private actionLibrary: Record<string, any>;
+
+  constructor(registerManager: RegisterManager, alarmManager: AlarmManager, actionManager: ActionManager) {
     this.decorationType = vscode.window.createTextEditorDecorationType({
       after: {
         color: '#999999'
@@ -48,6 +52,11 @@ export default class MyDecorator {
     this.alarmManager = alarmManager;
     this.alarmLibrary = Object.fromEntries(
       Object.entries(this.alarmManager.getAlarmLibrary()).map(([key, value]) => [value, key])
+    );
+
+    this.actionManager = actionManager;
+    this.actionLibrary = Object.fromEntries(
+      Object.entries(this.actionManager.getActionLibrary()).map(([key, value]) => [value, key])
     );
   }
 
@@ -121,7 +130,9 @@ export default class MyDecorator {
             break;
           case 'code':
             if (param.completer === 'alarm') {
-              description = this.alarmLibrary[value]?.replace(/\(.*$/, '') || '未知告警码';
+              description = '告警【' + (this.alarmLibrary[value]?.replace(/\(.*$/, '') || '未知告警码') + '】';
+            } else if (param.completer === 'action') {
+              description = '动作状态【' + (this.actionLibrary[value]?.replace(/\(.*$/, '') || '未知动作状态') + '】';
             }
             break;
           case 'time':
