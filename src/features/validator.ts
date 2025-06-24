@@ -16,6 +16,7 @@ export default class Validator {
   private static readonly COMMAND_PATTERN = /[^a-zA-Z_]/g;
   private static readonly REGISTER_PATTERN = /^[A-Z]+[0-9]+$/;
   private static readonly VALUE_PATTERN = /^-?\d+(\.\d+)?$/;
+  private static readonly TYPE_PATTERN = /^\s*(['"])(use init|use unit)\1\s*$/;
 
   constructor() {
     this.diagnosticCollection = vscode.languages.createDiagnosticCollection('acspec');
@@ -50,6 +51,9 @@ export default class Validator {
 
   private validateLine(lineText: string, lineNumber: number): ValidationError[] {
     const errors: ValidationError[] = [];
+
+    if (Validator.TYPE_PATTERN.test(lineText)) return errors;
+
     const parseResult = Parser.parseLine(lineText, lineNumber);
 
     if (parseResult.tokens.length === 0) return errors;
