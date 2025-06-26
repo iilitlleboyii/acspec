@@ -67,6 +67,7 @@ export async function activate(context: vscode.ExtensionContext) {
           panel.webview.postMessage({
             type: 'document',
             content: content,
+            path: document.uri.fsPath,
             timestamp: new Date().toISOString()
           });
         }
@@ -196,7 +197,7 @@ export async function activate(context: vscode.ExtensionContext) {
       // 监听 Webview 的消息
       panel.webview.onDidReceiveMessage((message) => {
         if (message.type === 'goto-line') {
-          moveCursorToLine(message.line);
+          moveCursorToLine(message.line, message.path);
         }
         if (message.type === 'webview-loaded') {
           panel!.webview.postMessage({
@@ -215,12 +216,14 @@ export async function activate(context: vscode.ExtensionContext) {
       }
 
       // 移动光标到指定行并选中
-      async function moveCursorToLine(lineNumber: number) {
+      async function moveCursorToLine(lineNumber: number, filePath: string) {
         const editors = vscode.window.visibleTextEditors;
 
         if (editors.length === 0) return;
 
-        const acspecEditors = editors.find((editor) => editor.document.languageId === 'tcs');
+        const acspecEditors = editors.find(
+          (editor) => editor.document.languageId === 'tcs' && editor.document.uri.fsPath === filePath
+        );
 
         if (!acspecEditors) return;
 
