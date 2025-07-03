@@ -42,30 +42,6 @@ export const keywordMap = {
       }
     ]
   },
-  linear_input: {
-    title: '线性输入',
-    document: '给定值范围和时间写入寄存器值\n\n格式: linear_input <地址>, <起始值>, <结束值>, [时间]',
-    snippet: 'linear_input ${1:地址}, ${2:起始值}, ${3:结束值}, ${4:时间}',
-    params: [
-      {
-        type: 'address',
-        placeholder: '地址',
-        completer: 'register'
-      },
-      {
-        type: 'value',
-        placeholder: '起始值'
-      },
-      {
-        type: 'value',
-        placeholder: '结束值'
-      },
-      {
-        type: 'time',
-        placeholder: '时间'
-      }
-    ]
-  },
   check_alarm: {
     title: '告警检测',
     document: '检测告警码\n\n格式: check_alarm <告警码>',
