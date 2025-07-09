@@ -146,6 +146,12 @@ export async function activate(context: vscode.ExtensionContext) {
   context.subscriptions.push(
     vscode.commands.registerCommand('acspec.updateRegisterLibraries', async () => {
       await registerManager.updateLibraries();
+
+      vscode.window.visibleTextEditors.forEach((editor) => {
+        if (editor.document.languageId === 'tcs') {
+          decorator.update(editor);
+        }
+      });
     })
   );
 
@@ -153,6 +159,12 @@ export async function activate(context: vscode.ExtensionContext) {
   context.subscriptions.push(
     vscode.commands.registerCommand('acspec.switchRegisterLibrary', async () => {
       await registerManager.switchRegisterLibrary();
+
+      vscode.window.visibleTextEditors.forEach((editor) => {
+        if (editor.document.languageId === 'tcs') {
+          decorator.update(editor);
+        }
+      });
     })
   );
 
@@ -160,6 +172,12 @@ export async function activate(context: vscode.ExtensionContext) {
   context.subscriptions.push(
     vscode.commands.registerCommand('acspec.updateAlarmLibraries', async () => {
       await alarmManager.updateLibraries();
+
+      vscode.window.visibleTextEditors.forEach((editor) => {
+        if (editor.document.languageId === 'tcs') {
+          decorator.update(editor);
+        }
+      });
     })
   );
 
@@ -167,6 +185,12 @@ export async function activate(context: vscode.ExtensionContext) {
   context.subscriptions.push(
     vscode.commands.registerCommand('acspec.switchAlarmLibrary', async () => {
       await alarmManager.switchAlarmLibrary();
+
+      vscode.window.visibleTextEditors.forEach((editor) => {
+        if (editor.document.languageId === 'tcs') {
+          decorator.update(editor);
+        }
+      });
     })
   );
 
