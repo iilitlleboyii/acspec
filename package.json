@@ -3,7 +3,7 @@
   "displayName": "AcSpec",
   "description": "Quickly write arcuchi test case script.",
   "publisher": "Arcuchi",
-  "version": "0.2.9",
+  "version": "0.3.0",
   "engines": {
     "vscode": "^1.101.0"
   },

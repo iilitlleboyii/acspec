@@ -216,7 +216,8 @@ export async function activate(context: vscode.ExtensionContext) {
         return;
       }
 
-      panel.webview.html = getWebviewContent(context, url);
+      const noCacheUrl = url + (url.includes('?') ? '&' : '?') + 't=' + Date.now();
+      panel.webview.html = getWebviewContent(context, noCacheUrl);
 
       // 监听 Webview 的消息
       panel.webview.onDidReceiveMessage((message) => {
